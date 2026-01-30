@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Zorro"
+rootProject.name = "ACZ"
 include(":app")
