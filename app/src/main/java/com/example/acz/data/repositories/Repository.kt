@@ -1,9 +1,11 @@
 package com.example.acz.data.repositories
 
-import com.example.acz.data.local.dao.NotaDao // <--- Importante: Importar NotaDao
+import com.example.acz.data.local.dao.HorarioDao // <--- Asegúrate de tener este import
+import com.example.acz.data.local.dao.NotaDao
 import com.example.acz.data.local.dao.RamoDao
 import com.example.acz.data.local.dao.SemestreDao
 import com.example.acz.data.local.dao.TareaDao
+import com.example.acz.data.local.entity.HorarioEntity
 import com.example.acz.data.local.entity.NotaEntity
 import com.example.acz.data.local.entity.RamoEntity
 import com.example.acz.data.local.entity.SemestreEntity
@@ -14,7 +16,8 @@ class AppRepository(
     val semestreDao: SemestreDao,
     private val ramoDao: RamoDao,
     private val tareaDao: TareaDao,
-    private val notaDao: NotaDao // <--- 1. AGREGAMOS ESTO AQUÍ
+    private val notaDao: NotaDao,
+    private val horarioDao: HorarioDao // <--- 1. AGREGAMOS ESTO AQUÍ (Faltaba)
 ) {
 
     // --- SEMESTRES ---
@@ -64,8 +67,6 @@ class AppRepository(
     }
 
     // --- NOTAS ---
-    // Ya no necesitamos la línea 'val notaDao = ...' porque lo recibimos arriba
-
     fun obtenerNotasDeRamo(ramoId: Long): Flow<List<NotaEntity>> = notaDao.getNotasPorRamo(ramoId)
 
     suspend fun insertarNota(nota: NotaEntity) = notaDao.insertNota(nota)
@@ -73,4 +74,12 @@ class AppRepository(
     suspend fun borrarNota(nota: NotaEntity) = notaDao.deleteNota(nota)
 
     suspend fun actualizarNota(nota: NotaEntity) = notaDao.updateNota(nota)
+
+    // --- HORARIO ---
+    // Aquí usamos la instancia 'horarioDao' (minúscula), no la clase 'HorarioDao' (mayúscula)
+    val todoElHorario: Flow<List<HorarioEntity>> = horarioDao.getAllHorarios()
+
+    suspend fun insertarBloque(h: HorarioEntity) = horarioDao.insertHorario(h)
+
+    suspend fun borrarBloque(h: HorarioEntity) = horarioDao.deleteHorario(h)
 }

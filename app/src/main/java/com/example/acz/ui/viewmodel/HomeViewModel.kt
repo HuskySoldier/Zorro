@@ -68,6 +68,27 @@ class HomeViewModel(private val repository: AppRepository) : ViewModel() {
             repository.borrarNota(nota)
         }
     }
+    // --- HORARIO ---
+    val horarioCompleto = repository.todoElHorario
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun guardarBloque(dia: Int, inicio: String, fin: String, sala: String, ramoId: Long) {
+        viewModelScope.launch {
+            repository.insertarBloque(
+                com.example.acz.data.local.entity.HorarioEntity(
+                    diaSemana = dia,
+                    horaInicio = inicio,
+                    horaFin = fin,
+                    sala = sala.ifBlank { null },
+                    ramoId = ramoId
+                )
+            )
+        }
+    }
+
+    fun borrarBloque(bloque: com.example.acz.data.local.entity.HorarioEntity) {
+        viewModelScope.launch { repository.borrarBloque(bloque) }
+    }
     // ----------------------------------------------------------
     // 2. ACCIONES DE TAREAS
     // ----------------------------------------------------------

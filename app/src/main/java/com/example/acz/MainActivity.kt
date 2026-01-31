@@ -1,7 +1,7 @@
 package com.example.acz
 
-import android.Manifest // <--- NUEVO
-import android.os.Build // <--- NUEVO
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Star // Icono para Notas
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,27 +22,29 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.work.ExistingPeriodicWorkPolicy // <--- NUEVO
-import androidx.work.PeriodicWorkRequestBuilder // <--- NUEVO
-import androidx.work.WorkManager // <--- NUEVO
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.acz.ui.screen.HomeScreen
+import com.example.acz.ui.screen.HorarioScreen
+import com.example.acz.ui.screen.NotasScreen // <--- IMPORTANTE: Importar la nueva pantalla
 import com.example.acz.ui.screen.RamosScreen
 import com.example.acz.ui.theme.ACZTheme
-import com.example.acz.worker.RecordatorioWorker // <--- NUEVO (Asegúrate de haber creado el archivo del paso anterior)
+import com.example.acz.worker.RecordatorioWorker
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit // <--- NUEVO
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 1. PEDIR PERMISO DE NOTIFICACIONES (Solo Android 13+) <--- NUEVO
+        // 1. PEDIR PERMISO DE NOTIFICACIONES (Solo Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
         }
 
-        // 2. PROGRAMAR EL WORKER DE SEGUNDO PLANO <--- NUEVO
+        // 2. PROGRAMAR EL WORKER DE SEGUNDO PLANO
         programarRecordatorios()
 
         setContent {
@@ -50,14 +54,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // FUNCIÓN AUXILIAR PARA PROGRAMAR LAS NOTIFICACIONES <--- NUEVO
     private fun programarRecordatorios() {
-        // Creamos una petición para que se repita cada 12 horas
         val workRequest = PeriodicWorkRequestBuilder<RecordatorioWorker>(12, TimeUnit.HOURS)
-            .setInitialDelay(10, TimeUnit.SECONDS) // Espera 10 seg antes de la primera vez (para probar)
+            .setInitialDelay(10, TimeUnit.SECONDS)
             .build()
 
-        // Lo encolamos (KEEP significa que si ya existe, no lo duplique)
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "work_recordatorio_acad",
             ExistingPeriodicWorkPolicy.KEEP,
@@ -82,10 +83,10 @@ fun MainAppStructure() {
                 Text("Menú Académico", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
                 HorizontalDivider()
 
-                // Opción 1: Inicio
+                // OPCIÓN 1: INICIO (TAREAS)
                 NavigationDrawerItem(
                     label = { Text("Mis Tareas") },
-                    selected = false, // Podrías mejorar esto detectando la ruta actual
+                    selected = false,
                     icon = { Icon(Icons.Default.Home, null) },
                     onClick = {
                         scope.launch {
@@ -95,7 +96,7 @@ fun MainAppStructure() {
                     }
                 )
 
-                // Opción 2: Ramos
+                // OPCIÓN 2: RAMOS (GESTIÓN)
                 NavigationDrawerItem(
                     label = { Text("Mis Ramos") },
                     selected = false,
@@ -107,10 +108,39 @@ fun MainAppStructure() {
                         }
                     }
                 )
+
+                // OPCIÓN 3: NOTAS (NUEVO)
+                NavigationDrawerItem(
+                    label = { Text("Mis Notas") },
+                    selected = false,
+                    icon = { Icon(Icons.Default.Star, null) }, // Usamos una Estrella para las notas
+                    onClick = {
+                        scope.launch {
+                            // Navegamos a la ruta "notas"
+                            navController.navigate("notas")
+                            drawerState.close()
+                        }
+                    }
+                )
+
+                // OPCIÓN 4: HORARIO (NUEVO)
+                NavigationDrawerItem(
+                    label = { Text("Mi Horario") },
+                    selected = false,
+                    icon = { Icon(Icons.Default.DateRange, null) },
+                    onClick = {
+                        scope.launch {
+                            navController.navigate("horario")
+                            drawerState.close()
+                        }
+                    }
+                )
+
+
             }
         }
     ) {
-        // Contenido Principal con la Barra Superior Compartida
+        // Contenido Principal
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -118,9 +148,7 @@ fun MainAppStructure() {
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch {
-                                drawerState.apply {
-                                    if (isClosed) open() else close()
-                                }
+                                drawerState.apply { if (isClosed) open() else close() }
                             }
                         }) {
                             Icon(Icons.Default.Menu, contentDescription = "Menú")
@@ -133,18 +161,30 @@ fun MainAppStructure() {
                 )
             }
         ) { paddingValues ->
-            // El NavHost ahora vive DENTRO del Scaffold global
+
+            // EL MAPA DE NAVEGACIÓN
             NavHost(
                 navController = navController,
                 startDestination = "home",
                 modifier = Modifier.padding(paddingValues)
             ) {
+                // Ruta Home
                 composable("home") {
-                    // Ya no necesitamos pasar navegación manual ni TopBar interna
                     HomeScreen()
                 }
+
+                // Ruta Ramos
                 composable("ramos") {
                     RamosScreen(onBack = { navController.popBackStack() })
+                }
+
+                // Ruta Notas (AQUÍ ESTABA FALTANDO CONECTARLO)
+                composable("notas") {
+                    NotasScreen()
+                }
+
+                composable("horario") {
+                    HorarioScreen()
                 }
             }
         }
